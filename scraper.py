@@ -89,7 +89,7 @@ def save_summary_csv(data_list, filename="google_cloud_profile_summary.csv"):
         # Define the header based on the user's screenshot, using full names for clarity
         header = [
             'User Name', 'Email', 'Google Cloud Skills Boost Profile URLL', 'Access', 'UR', 'Co',
-            '# of Skill Badges', 'Names of Skill Badges',
+            '# of Skill Badges Completed', 'Names of Skill Badges',
             '# of Arcade Games', 'Names of Completed Arcade Games'
         ]
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
@@ -137,8 +137,8 @@ def create_sample_input_file(filename):
 
 # --- Main execution ---
 if __name__ == "__main__":
-    input_filename = "progress_data.csv"
-    summary_output_filename = "google_cloud_profile_summary.csv"
+    input_filename = "progress_data_input.csv"
+    summary_output_filename = "progress_data.csv"
     detailed_output_filename = "google_cloud_badges_details.csv"
     failed_output_filename = "failed_profiles.csv"
 
@@ -185,7 +185,7 @@ if __name__ == "__main__":
 
                         summary_data = {
                             'User Name': row.get('User Name') or user_name_from_api,
-                            '# of Skill Badges': len(skill_badges),
+                            '# of Skill Badges Completed': len(skill_badges),
                             'Names of Skill Badges': ', '.join([b.get('name', '') for b in skill_badges]),
                             '# of Arcade Games': len(arcade_badges),
                             'Names of Completed Arcade Games': ', '.join([b.get('name', '') for b in arcade_badges]),
