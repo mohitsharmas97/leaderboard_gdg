@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDG Study Jam Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gdg-blue: #4285F4;
+            --gdg-red: #EA4335;
+            --gdg-yellow: #FBBC04;
+            --gdg-green: #34A853;
+            --bg-primary: #0F1419;
+            --bg-secondary: #1A1F2E;
+            --bg-card: #232936;
+            --text-primary: #E8EAED;
+            --text-secondary: #9AA0A6;
+            --border-color: #2D3748;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --glow: rgba(66, 133, 244, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a0f2e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--gdg-blue);
+            border-radius: 50%;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+            25% { transform: translate(100px, -100px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translate(-50px, -200px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translate(-150px, -100px) rotate(270deg); opacity: 0.6; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header with GDG branding */
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeIn 0.8s ease-out;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+            border-radius: 24px;
+            box-shadow: 0 10px 40px var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        .gdg-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .logo-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .dot:nth-child(1) { background: var(--gdg-blue); animation-delay: 0s; }
+        .dot:nth-child(2) { background: var(--gdg-red); animation-delay: 0.2s; }
+        .dot:nth-child(3) { background: var(--gdg-yellow); animation-delay: 0.4s; }
+        .dot:nth-child(4) { background: var(--gdg-green); animation-delay: 0.6s; }
+
+        h1 {
+            font-family: 'Google Sans', sans-serif;
+            font-size: 3.2em;
+            background: linear-gradient(135deg, var(--gdg-blue), var(--gdg-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .update-info {
+            color: var(--text-secondary);
+            font-size: 0.95em;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(66, 133, 244, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(66, 133, 244, 0.3);
+        }
+
+        /* Enhanced stats cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gdg-blue), var(--gdg-green));
+        }
+
+        .stat-card:nth-child(2)::before {
+            background: linear-gradient(90deg, var(--gdg-red), var(--gdg-yellow));
+        }
+
+        .stat-card:nth-child(3)::before {
+            background: linear-gradient(90deg, var(--gdg-yellow), var(--gdg-green));
+        }
+
+        .stat-card:nth-child(4)::before {
+            background: linear-gradient(90deg, var(--gdg-green), var(--gdg-blue));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 48px var(--shadow), 0 0 30px var(--glow);
+            border-color: var(--gdg-blue);
+        }
+
+        .stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 2px 8px rgba(66, 133, 244, 0.5));
+        }
+
+        .stat-card h3 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--gdg-blue), var(--gdg-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card p {
+            color: var(--text-secondary);
+            font-size: 1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Controls with better design */
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 35px;
+            gap: 20px;
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+            border: 2px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(66, 133, 244, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+
+        .filter-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--gdg-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--gdg-blue), #3367D6);
+            color: white;
+            border-color: var(--gdg-blue);
+            box-shadow: 0 4px 20px rgba(66, 133, 244, 0.5);
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 350px;
+            min-width: 250px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 20px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            font-size: 1em;
+            outline: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-input:focus {
+            border-color: var(--gdg-blue);
+            box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.2);
+            background: var(--bg-card);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        /* Enhanced leaderboard cards */
+        .leaderboard-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .player-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px var(--shadow);
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            align-items: center;
+            gap: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .player-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: left 0.5s;
+        }
+
+        .player-card:hover::before {
+            left: 100%;
+        }
+
+        .player-card:hover {
+            transform: translateX(8px) scale(1.02);
+            border-color: var(--gdg-blue);
+            box-shadow: 0 12px 48px var(--shadow), -8px 0 30px rgba(66, 133, 244, 0.3);
+        }
+
+        .player-card.top-rank-1 { 
+            border-left: 6px solid #FFD700;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--bg-card));
+        }
+        .player-card.top-rank-2 { 
+            border-left: 6px solid #C0C0C0;
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), var(--bg-card));
+        }
+        .player-card.top-rank-3 { 
+            border-left: 6px solid #CD7F32;
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), var(--bg-card));
+        }
+
+        .rank-badge {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+            border-radius: 16px;
+            border: 3px solid var(--border-color);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .rank-badge.gold { 
+            border-color: #FFD700;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #1A1F2E;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+        .rank-badge.silver { 
+            border-color: #C0C0C0;
+            background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+            color: #1A1F2E;
+            box-shadow: 0 0 30px rgba(192, 192, 192, 0.5);
+        }
+        .rank-badge.bronze { 
+            border-color: #CD7F32;
+            background: linear-gradient(135deg, #CD7F32, #B8733C);
+            color: #1A1F2E;
+            box-shadow: 0 0 30px rgba(205, 127, 50, 0.5);
+        }
+
+        .player-card:hover .rank-badge {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .player-info {
+            min-width: 0;
+        }
+
+        .player-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .achievement-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, var(--gdg-green), #2D8A3E);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(52, 168, 83, 0.4);
+        }
+
+        .player-stats {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(66, 133, 244, 0.1);
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(66, 133, 244, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(66, 133, 244, 0.2);
+            transform: scale(1.05);
+        }
+
+        .stat-item strong {
+            color: var(--gdg-blue);
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+
+        .progress-section {
+            text-align: right;
+            min-width: 200px;
+        }
+
+        .progress-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gdg-blue), var(--gdg-green));
+            border-radius: 10px;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 0 10px rgba(66, 133, 244, 0.6);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            font-size: 1em;
+            color: var(--gdg-blue);
+            margin-top: 8px;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-primary);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 20px auto;
+            border: 4px solid rgba(66, 133, 244, 0.2);
+            border-top: 4px solid var(--gdg-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            h1 { font-size: 2.5em; }
+            .stats-container { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            .stats-container { grid-template-columns: 1fr; }
+            .controls-container { 
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-container {
+                max-width: 100%;
+            }
+            .player-card {
+                grid-template-columns: 60px 1fr;
+                gap: 15px;
+            }
+            .progress-section {
+                grid-column: 1 / -1;
+                text-align: left;
+                margin-top: 15px;
+            }
+            .player-stats {
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.6em; }
+            .stat-card h3 { font-size: 2.2em; }
+            .rank-badge { 
+                width: 50px; 
+                height: 50px;
+                font-size: 1.3em;
+            }
+            .player-name { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <div class="gdg-logo">
+                <div class="logo-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+            <h1>GDG Study Jam 2025</h1>
+            <p class="subtitle">🚀 Track your learning journey and compete with peers</p>
+            <p class="update-info" id="lastUpdate">
+                <span>🔄</span>
+                <span>Loading...</span>
+            </p>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <h3 id="totalParticipants">0</h3>
+                <p>Active Learners</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <h3 id="totalBadges">0</h3>
+                <p>Total Badges</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎮</div>
+                <h3 id="totalGames">0</h3>
+                <p>Games Completed</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <h3 id="avgProgress">0%</h3>
+                <p>Avg Progress</p>
+            </div>
+        </div>
+        
+        <div class="controls-container">
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterLeaderboard(event, 'all')">🏅 All Rankings</button>
+                <button class="filter-btn" onclick="filterLeaderboard(event, 'games')">🎮 Top Games</button>
+                <button class="filter-btn" onclick="filterLeaderboard(event, 'badges')">🏆 Top Badges</button>
+                <button class="filter-btn" onclick="filterLeaderboard(event, 'active')">⚡ Most Active</button>
+            </div>
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search participant...">
+                <span class="search-icon">🔍</span>
+            </div>
+        </div>
+
+        <div class="leaderboard-grid" id="leaderboard">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading leaderboard data...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create animated background particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853'];
+            
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 60 + 20 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDuration = Math.random() * 10 + 15 + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        createParticles();
+
+        let allPlayers = [];
+        let currentFilter = 'all';
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            // Trim and remove quotes from headers
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const data = [];
+
+            // This regular expression splits by commas, but ignores commas inside double quotes
+            const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+            for (let i = 1; i < lines.length; i++) {
+                // Skip any empty lines in the CSV
+                if (lines[i].trim() === '') continue;
+
+                const values = lines[i].split(regex).map(v => {
+                    // Remove leading/trailing whitespace and quotes from each value
+                    return v.trim().replace(/^"|"$/g, '');
+                });
+                
+                if (values.length === headers.length) {
+                    let row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || ''; // Ensure value is not undefined
+                    });
+                    data.push(row);
+                } else {
+                    // This will help you debug if any other rows have issues in the future
+                    console.warn(`Skipping malformed CSV row ${i + 1}: The number of values doesn't match the number of headers.`);
+                    console.log("Headers:", headers.length, "Values:", values.length, "Line:", lines[i]);
+                }
+            }
+            return data;
+        }
+
+        function getRankClass(rank) {
+            if (rank === 1) return 'top-rank-1';
+            if (rank === 2) return 'top-rank-2';
+            if (rank === 3) return 'top-rank-3';
+            return '';
+        }
+        
+        function getBadgeClass(rank) {
+            if (rank === 1) return 'gold';
+            if (rank === 2) return 'silver';
+            if (rank === 3) return 'bronze';
+            return '';
+        }
+
+        function getAchievementBadge(badges, games) {
+            const total = badges + games;
+            if (total >= 20) return '<span class="achievement-badge">🌟 Expert</span>';
+            if (total >= 15) return '<span class="achievement-badge">⭐ Advanced</span>';
+            if (total >= 10) return '<span class="achievement-badge">💫 Intermediate</span>';
+            if (total >= 5) return '<span class="achievement-badge">✨ Beginner</span>';
+            return '';
+        }
+
+        function createPlayerCard(player, rank) {
+            const card = document.createElement('div');
+            card.className = 'player-card ' + getRankClass(rank);
+            card.style.animationDelay = (rank * 0.03) + 's';
+
+            const badges = parseInt(player['# of Skill Badges Completed']) || 0;
+            const games = parseInt(player['# of Arcade Games']) || 0;
+            const maxProgress = 20; 
+            const totalActivity = badges + games;
+            const progress = Math.min(100, (totalActivity / maxProgress) * 100);
+
+            card.innerHTML = `
+                <div class="rank-badge ${getBadgeClass(rank)}">#${rank}</div>
+                <div class="player-info">
+                    <div class="player-name">
+                        ${player['User Name']}
+                        ${getAchievementBadge(badges, games)}
+                    </div>
+                    <div class="player-stats">
+                        <div class="stat-item">
+                            <span>🏆</span>
+                            <span><strong>${badges}</strong> Badges</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>🎮</span>
+                            <span><strong>${games}</strong> Games</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-section">
+                    <div class="progress-label">Completion Progress</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%;"></div>
+                    </div>
+                    <div class="progress-percentage">${Math.round(progress)}%</div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateStats(players) {
+            const totalBadges = players.reduce((sum, p) => sum + (parseInt(p['# of Skill Badges Completed']) || 0), 0);
+            const totalGames = players.reduce((sum, p) => sum + (parseInt(p['# of Arcade Games']) || 0), 0);
+            const maxPossibleProgress = players.length * 20; 
+            const avgProgress = players.length > 0 ? 
+                Math.round(((totalBadges + totalGames) / maxPossibleProgress) * 100) : 0;
+
+            animateNumber('totalParticipants', players.length);
+            animateNumber('totalBadges', totalBadges);
+            animateNumber('totalGames', totalGames);
+            document.getElementById('avgProgress').textContent = avgProgress + '%';
+        }
+
+        function animateNumber(id, target) {
+            const element = document.getElementById(id);
+            const duration = 1500;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(progress * target);
+                element.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    element.textContent = target; 
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function filterLeaderboard(event, type) {
+            currentFilter = type;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            let sortedPlayers = [...allPlayers];
+            
+            switch(type) {
+                case 'games':
+                    sortedPlayers.sort((a, b) => 
+                        (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0)
+                    );
+                    break;
+                case 'badges':
+                    sortedPlayers.sort((a, b) => 
+                        (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0)
+                    );
+                    break;
+                case 'active':
+                    sortedPlayers.sort((a, b) => {
+                        const aTotal = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                        const bTotal = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                        return bTotal - aTotal;
+                    });
+                    break;
+                default:
+                    sortedPlayers.sort((a, b) => {
+                        const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                        const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                        return bScore - aScore;
+                    });
+            }
+
+            renderLeaderboard(sortedPlayers);
+        }
+
+        function renderLeaderboard(players) {
+            const container = document.getElementById('leaderboard');
+            
+            if (players.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>No participants found</h3>
+                        <p>Try adjusting your search or filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            players.forEach((player, index) => {
+                container.appendChild(createPlayerCard(player, index + 1));
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = allPlayers.filter(p => 
+                p['User Name'].toLowerCase().includes(searchTerm)
+            );
+            
+            let sortedFiltered = [...filtered];
+            
+            if (currentFilter === 'games') {
+                sortedFiltered.sort((a, b) => (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0));
+            } else if (currentFilter === 'badges') {
+                sortedFiltered.sort((a, b) => (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0));
+            } else {
+                sortedFiltered.sort((a, b) => {
+                    const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                    const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                    return bScore - aScore;
+                });
+            }
+            
+            renderLeaderboard(sortedFiltered);
+        });
+
+        fetch('progress_data.csv')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                allPlayers = parseCSV(csvText);
+                
+                allPlayers.sort((a, b) => {
+                    const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                    const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                    return bScore - aScore;
+                });
+                
+                updateStats(allPlayers);
+                renderLeaderboard(allPlayers);
+                
+                const now = new Date();
+                document.getElementById('lastUpdate').innerHTML = `
+                    <span>🔄</span>
+                    <span>Updated: ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('leaderboard').innerHTML = 
+                    `<div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Error Loading Data</h3>
+                        <p>Please ensure 'progress_data.csv' is accessible</p>
+                        <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.7;">${error.message}</p>
+                    </div>`;
+                console.error('Data Loading Error:', error);
+            });
+    </script>
+</body>
+</html>
