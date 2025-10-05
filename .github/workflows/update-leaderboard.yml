@@ -31,7 +31,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          git add progress_data_input.csv progress_data.csv google_cloud_badges_details.csv failed_profile.csv
+          git add progress_data_input.csv progress_data.csv google_cloud_badges_details.csv failed_profiles.csv
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update leaderboard data" && git push)
       
       - name: Trigger Netlify deploy
