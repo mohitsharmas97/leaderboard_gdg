@@ -2,7 +2,8 @@ name: Update Leaderboard
 
 on:
   schedule:
-    # Run every 6 hours (adjust as needed)
+    # Your comment says every 6 hours, but '0 */2 * * *' runs every 2 hours.
+    # For every 6 hours, use '0 */6 * * *'
     - cron: '0 */2 * * *'
   workflow_dispatch: # Allow manual trigger
 
@@ -10,6 +11,10 @@ jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
     
+    # Add this permissions block
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -31,10 +36,14 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          git add progress_data.csv google_cloud_badges_details.csv failed_profiles.csv
+          # This command will fail if the scraper creates no new files.
+          # It's better to add them individually or use --ignore-errors
+          git add progress_data.csv google_cloud_badges_details.csv
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update leaderboard data" && git push)
       
       - name: Trigger Netlify deploy
+        # This step will only run if the previous steps succeed
+        if: success()
         env:
           NETLIFY_HOOK_URL: ${{ secrets.NETLIFY_HOOK_URL }}
         run: |
