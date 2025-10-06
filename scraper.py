@@ -4,6 +4,7 @@ import csv
 import json
 import os
 import time
+from datetime import datetime
 
 def get_badge_dates(url):
     """
@@ -28,11 +29,69 @@ def get_badge_dates(url):
         
         if title_element and date_element:
             title = title_element.text.strip()
-            # Clean up the date string
             date = date_element.text.strip().replace("Earned ", "", 1)
             dates_map[title] = date
             
     return dates_map
+
+def parse_date(date_str):
+    """
+    Parses various date formats into a datetime object.
+    Handles formats like "Dec 31, 2024", "Jan 1, 2025", or "Oct 4, 2025 EDT"
+    """
+    if not date_str or date_str == 'N/A':
+        return None
+    
+    try:
+        # Remove "Earned " prefix if present
+        date_str = date_str.replace("Earned ", "").strip()
+        
+        # Remove timezone suffixes (EDT, EST, PST, etc.)
+        date_str = date_str.replace(" EDT", "").replace(" EST", "").replace(" PDT", "").replace(" PST", "").replace(" CDT", "").replace(" CST", "").replace(" MDT", "").replace(" MST", "").strip()
+        
+        # Handle double spaces
+        date_str = " ".join(date_str.split())
+        
+        return datetime.strptime(date_str, "%b %d, %Y")
+    except ValueError:
+        try:
+            return datetime.strptime(date_str, "%B %d, %Y")
+        except ValueError:
+            print(f"Warning: Could not parse date: {date_str}")
+            return None
+
+def calculate_completion_time(skill_badges, arcade_badges, dates_map):
+    """
+    Calculates when a user completed the challenge (reached 20 total).
+    Returns the date of the 20th badge/game earned, or None if not completed.
+    """
+    all_items = []
+    
+    # Collect all badges with their dates
+    for badge in skill_badges:
+        name = badge.get('name', '')
+        date_str = dates_map.get(name, 'N/A')
+        date_obj = parse_date(date_str)
+        if date_obj:
+            all_items.append({'name': name, 'date': date_obj, 'date_str': date_str})
+    
+    for badge in arcade_badges:
+        name = badge.get('name', '')
+        date_str = dates_map.get(name, 'N/A')
+        date_obj = parse_date(date_str)
+        if date_obj:
+            all_items.append({'name': name, 'date': date_obj, 'date_str': date_str})
+    
+    # Sort by date (earliest first)
+    all_items.sort(key=lambda x: x['date'])
+    
+    # If they have 20 or more items with dates, return the 20th item's date
+    if len(all_items) >= 20:
+        completion_item = all_items[19]  # 0-indexed, so 19 is the 20th item
+        print(f"  Completion reached on: {completion_item['date_str']} (Badge: {completion_item['name']})")
+        return completion_item['date_str']
+    
+    return None
 
 def get_arcade_api_data(profile_url):
     """
@@ -79,18 +138,18 @@ def save_detailed_csv(data, filename="google_cloud_badges_details.csv"):
 
 def save_summary_csv(data_list, filename="google_cloud_profile_summary.csv"):
     """
-    Saves the profile summary data in the format from the user's screenshot.
+    Saves the profile summary data with completion time.
     """
     if not data_list:
         print("No summary data to save.")
         return
 
     try:
-        # Define the header based on the user's screenshot, using full names for clarity
         header = [
-            'User Name', 'Email', 'Google Cloud Skills Boost Profile URLL', 'Access', 'UR', 'Co',
+            'User Name', 'Email', 'Google Cloud Skills Boost Profile URL', 'Access', 'UR', 'Co',
             '# of Skill Badges Completed', 'Names of Skill Badges',
-            '# of Arcade Games', 'Names of Completed Arcade Games'
+            '# of Arcade Games', 'Names of Completed Arcade Games',
+            'Completion Time'  # NEW COLUMN
         ]
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=header, extrasaction='ignore')
@@ -123,26 +182,23 @@ def save_failed_csv(data_list, filename="failed_profiles.csv", fieldnames=None):
     except IOError as e:
         print(f"Error: Could not write to file {filename}. {e}")
 
-
 def create_sample_input_file(filename):
     """Creates a sample input CSV file if it doesn't already exist."""
     if not os.path.exists(filename):
         print(f"Creating sample input file: {filename}")
         with open(filename, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            # Write a header that matches the desired output format for consistency
             writer.writerow(['User Name', 'Email', 'Google Cloud Skills Boost Profile URL', 'Access', 'UR', 'Co'])
             writer.writerow(['Sample User', '', 'https://www.cloudskillsboost.google.com/public_profiles/01fa1e14-9949-434b-86dc-0e2ccd3ae339', 'wn All Good', 'Yes', 'No'])
         print("Sample file created. Please add more profile URLs to it.")
 
 # --- Main execution ---
 if __name__ == "__main__":
-    input_filename = "progress_data_input.csv"
-    summary_output_filename = "progress_data.csv"
-    detailed_output_filename = "google_cloud_badges_details.csv"
+    input_filename = "failed_profiles.csv"
+    summary_output_filename = "progress_data_failed.csv"
+    detailed_output_filename = "google_cloud_badges_details_failed.csv"
     failed_output_filename = "failed_profiles.csv"
 
-    # Create a sample input file if it doesn't exist to guide the user
     create_sample_input_file(input_filename)
 
     all_summary_data = []
@@ -183,12 +239,16 @@ if __name__ == "__main__":
                         for category in arcade_categories:
                             arcade_badges.extend(badges_overview.get(category, {}).get('badges', []))
 
+                        # Calculate completion time
+                        completion_time = calculate_completion_time(skill_badges, arcade_badges, dates_map)
+
                         summary_data = {
                             'User Name': row.get('User Name') or user_name_from_api,
                             '# of Skill Badges Completed': len(skill_badges),
                             'Names of Skill Badges': ', '.join([b.get('name', '') for b in skill_badges]),
                             '# of Arcade Games': len(arcade_badges),
                             'Names of Completed Arcade Games': ', '.join([b.get('name', '') for b in arcade_badges]),
+                            'Completion Time': completion_time or ''  # NEW FIELD
                         }
                         
                         full_summary_row = row.copy()

@@ -726,22 +726,16 @@
                 // Skip any empty lines in the CSV
                 if (lines[i].trim() === '') continue;
 
-                const values = lines[i].split(regex).map(v => {
-                    // Remove leading/trailing whitespace and quotes from each value
-                    return v.trim().replace(/^"|"$/g, '');
+                // Inside the 'for' loop in parseCSV
+                const values = lines[i].split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+                            
+                // No 'if' check needed here!
+                let row = {};
+                headers.forEach((header, index) => {
+                    // This will assign the value if it exists, or an empty string if the row is too short
+                    row[header] = values[index] || ''; 
                 });
-                
-                if (values.length === headers.length) {
-                    let row = {};
-                    headers.forEach((header, index) => {
-                        row[header] = values[index] || ''; // Ensure value is not undefined
-                    });
-                    data.push(row);
-                } else {
-                    // This will help you debug if any other rows have issues in the future
-                    console.warn(`Skipping malformed CSV row ${i + 1}: The number of values doesn't match the number of headers.`);
-                    console.log("Headers:", headers.length, "Values:", values.length, "Line:", lines[i]);
-                }
+                data.push(row);
             }
             return data;
         }
@@ -780,6 +774,18 @@
             const totalActivity = badges + games;
             const progress = Math.min(100, (totalActivity / maxProgress) * 100);
 
+            // --- NEW CODE START ---
+            // Check if the completion time exists
+            const completionTime = player['Completion Time'];
+            // Create the HTML for the completion time, but only if it's not an empty string
+            const completionTimeHTML = completionTime
+                ? `<div class="stat-item">
+                    <span>🗓️</span>
+                    <span>Completed: <strong>${completionTime.replace(/EDT|EST|PDT|PST/g, '').trim()}</strong></span>
+                </div>`
+                : '';
+            // --- NEW CODE END ---
+
             card.innerHTML = `
                 <div class="rank-badge ${getBadgeClass(rank)}">#${rank}</div>
                 <div class="player-info">
@@ -796,7 +802,7 @@
                             <span>🎮</span>
                             <span><strong>${games}</strong> Games</span>
                         </div>
-                    </div>
+                        ${completionTimeHTML} </div>
                 </div>
                 <div class="progress-section">
                     <div class="progress-label">Completion Progress</div>
@@ -809,7 +815,6 @@
 
             return card;
         }
-
         function updateStats(players) {
             const totalBadges = players.reduce((sum, p) => sum + (parseInt(p['# of Skill Badges Completed']) || 0), 0);
             const totalGames = players.reduce((sum, p) => sum + (parseInt(p['# of Arcade Games']) || 0), 0);
@@ -855,27 +860,35 @@
             
             switch(type) {
                 case 'games':
-                    sortedPlayers.sort((a, b) => 
-                        (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0)
-                    );
+                    sortedPlayers.sort((a, b) => {
+                        const diff = (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0);
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
                     break;
                 case 'badges':
-                    sortedPlayers.sort((a, b) => 
-                        (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0)
-                    );
+                    sortedPlayers.sort((a, b) => {
+                        const diff = (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0);
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
                     break;
                 case 'active':
                     sortedPlayers.sort((a, b) => {
                         const aTotal = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
                         const bTotal = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                        return bTotal - aTotal;
+                        const diff = bTotal - aTotal;
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
                     });
                     break;
                 default:
                     sortedPlayers.sort((a, b) => {
                         const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
                         const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                        return bScore - aScore;
+                        const diff = bScore - aScore;
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
                     });
             }
 
@@ -910,15 +923,28 @@
             
             let sortedFiltered = [...filtered];
             
+            // INSIDE: document.getElementById('searchInput').addEventListener(...)
+// INSIDE: document.getElementById('searchInput').addEventListener(...)
+
             if (currentFilter === 'games') {
-                sortedFiltered.sort((a, b) => (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0));
+                sortedFiltered.sort((a, b) => {
+                    const diff = (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0);
+                    if (diff !== 0) return diff;
+                    return compareTimes(a['Completion Time'], b['Completion Time']);
+                });
             } else if (currentFilter === 'badges') {
-                sortedFiltered.sort((a, b) => (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0));
+                sortedFiltered.sort((a, b) => {
+                    const diff = (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0);
+                    if (diff !== 0) return diff;
+                    return compareTimes(a['Completion Time'], b['Completion Time']);
+                });
             } else {
                 sortedFiltered.sort((a, b) => {
                     const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
                     const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                    return bScore - aScore;
+                    const diff = bScore - aScore;
+                    if (diff !== 0) return diff;
+                    return compareTimes(a['Completion Time'], b['Completion Time']);
                 });
             }
             
@@ -938,9 +964,10 @@
                 allPlayers.sort((a, b) => {
                     const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
                     const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                    return bScore - aScore;
+                    const diff = bScore - aScore;
+                    if (diff !== 0) return diff;
+                    return compareTimes(a['Completion Time'], b['Completion Time']);
                 });
-                
                 updateStats(allPlayers);
                 renderLeaderboard(allPlayers);
                 
@@ -960,6 +987,34 @@
                     </div>`;
                 console.error('Data Loading Error:', error);
             });
+
+            function compareTimes(timeA, timeB) {
+    // Helper function to clean and parse the date string
+                const parseDate = (timeStr) => {
+                    if (!timeStr || typeof timeStr !== 'string') return null;
+                    
+                    // 1. Remove timezone abbreviations (EDT, PST, etc.)
+                    // 2. Replace multiple spaces with a single space
+                    const cleanedTime = timeStr.replace(/\s(EDT|EST|PDT|PST|CDT|CST|MDT|MST)$/, '').replace(/\s\s+/g, ' ');
+                    
+                    const date = new Date(cleanedTime);
+                    // Check if the date is valid
+                    return isNaN(date.getTime()) ? null : date;
+                };
+
+                const dateA = parseDate(timeA);
+                const dateB = parseDate(timeB);
+
+                // If both users completed, the one who finished earlier ranks higher
+                if (dateA && dateB) return dateA - dateB; 
+                
+                // A user who completed ranks higher than one who hasn't
+                if (dateA) return -1; // A has a time, B doesn't. A comes first.
+                if (dateB) return 1;  // B has a time, A doesn't. B comes first.
+                
+                // If neither has a completion time, their order doesn't matter
+                return 0;
+            }
     </script>
 </body>
 </html>
