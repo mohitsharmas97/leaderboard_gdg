@@ -194,9 +194,9 @@ def create_sample_input_file(filename):
 
 # --- Main execution ---
 if __name__ == "__main__":
-    input_filename = "failed_profiles.csv"
-    summary_output_filename = "progress_data_failed.csv"
-    detailed_output_filename = "google_cloud_badges_details_failed.csv"
+    input_filename = "progress_data_input.csv"
+    summary_output_filename = "progress_data.csv"
+    detailed_output_filename = "google_cloud_badges_details.csv"
     failed_output_filename = "failed_profiles.csv"
 
     create_sample_input_file(input_filename)
