@@ -1,17 +1,14 @@
-name: Update Leaderboard
+name: Update Leaderboard Data
 
 on:
   schedule:
-    # Your comment says every 6 hours, but '0 */2 * * *' runs every 2 hours.
-    # For every 6 hours, use '0 */6 * * *'
+    # Runs every 4 hours
     - cron: '0 */4 * * *'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
-  scrape-and-deploy:
+  scrape-and-commit:
     runs-on: ubuntu-latest
-    
-    # Add this permissions block
     permissions:
       contents: write
       
@@ -25,26 +22,15 @@ jobs:
           python-version: '3.10'
       
       - name: Install dependencies
-        run: |
-          pip install requests beautifulsoup4
+        run: pip install requests beautifulsoup4
       
       - name: Run scraper
-        run: |
-          python scraper.py
+        run: python scraper.py
       
       - name: Commit and push if changed
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          # This command will fail if the scraper creates no new files.
-          # It's better to add them individually or use --ignore-errors
           git add progress_data.csv google_cloud_badges_details.csv
+          # This command commits and pushes only if there are changes
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update leaderboard data" && git push)
-      
-      - name: Trigger Netlify deploy
-        # This step will only run if the previous steps succeed
-        if: success()
-        env:
-          NETLIFY_HOOK_URL: ${{ secrets.NETLIFY_HOOK_URL }}
-        run: |
-          curl -X POST -d {} $NETLIFY_HOOK_URL
