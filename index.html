@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -770,6 +770,38 @@
             return '';
         }
 
+        // Check if a player has completed 100% (20 or more total activities)
+        function isComplete(player) {
+            const badges = parseInt(player['# of Skill Badges Completed']) || 0;
+            const games = parseInt(player['# of Arcade Games']) || 0;
+            return (badges + games) >= 20;
+        }
+
+        // Enhanced sorting: 100% complete players sorted by date (earliest first),
+        // then incomplete players sorted by score (highest first)
+        function comparePlayersWithCompletion(a, b) {
+            const aComplete = isComplete(a);
+            const bComplete = isComplete(b);
+            
+            // If both completed, sort by completion date (earliest first)
+            if (aComplete && bComplete) {
+                return compareTimes(a['Completion Time'], b['Completion Time']);
+            }
+            
+            // Completed players always rank higher than incomplete
+            if (aComplete) return -1;
+            if (bComplete) return 1;
+            
+            // Both incomplete: sort by total score (highest first)
+            const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+            const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+            const diff = bScore - aScore;
+            if (diff !== 0) return diff;
+            
+            // If same score, try sorting by completion time if available
+            return compareTimes(a['Completion Time'], b['Completion Time']);
+        }
+
         // Sanitize HTML to prevent XSS attacks
         function sanitizeHTML(str) {
             const div = document.createElement('div');
@@ -888,22 +920,10 @@
                     });
                     break;
                 case 'active':
-                    sortedPlayers.sort((a, b) => {
-                        const aTotal = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
-                        const bTotal = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                        const diff = bTotal - aTotal;
-                        if (diff !== 0) return diff;
-                        return compareTimes(a['Completion Time'], b['Completion Time']);
-                    });
+                    sortedPlayers.sort(comparePlayersWithCompletion);
                     break;
                 default:
-                    sortedPlayers.sort((a, b) => {
-                        const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
-                        const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                        const diff = bScore - aScore;
-                        if (diff !== 0) return diff;
-                        return compareTimes(a['Completion Time'], b['Completion Time']);
-                    });
+                    sortedPlayers.sort(comparePlayersWithCompletion);
             }
 
             renderLeaderboard(sortedPlayers);
@@ -966,13 +986,7 @@
                         return compareTimes(a['Completion Time'], b['Completion Time']);
                     });
                 } else {
-                    sortedFiltered.sort((a, b) => {
-                        const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
-                        const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                        const diff = bScore - aScore;
-                        if (diff !== 0) return diff;
-                        return compareTimes(a['Completion Time'], b['Completion Time']);
-                    });
+                    sortedFiltered.sort(comparePlayersWithCompletion);
                 }
                 
                 renderLeaderboard(sortedFiltered);
@@ -991,13 +1005,7 @@
             .then(csvText => {
                 allPlayers = parseCSV(csvText);
                 
-                allPlayers.sort((a, b) => {
-                    const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
-                    const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                    const diff = bScore - aScore;
-                    if (diff !== 0) return diff;
-                    return compareTimes(a['Completion Time'], b['Completion Time']);
-                });
+                allPlayers.sort(comparePlayersWithCompletion);
                 updateStats(allPlayers);
                 renderLeaderboard(allPlayers);
                 
