@@ -710,6 +710,7 @@
 
         let allPlayers = [];
         let currentFilter = 'all';
+        let searchDebounceTimer = null;
 
         function parseCSV(csvText) {
             const lines = csvText.trim().split('\n');
@@ -719,23 +720,29 @@
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             const data = [];
 
-            // This regular expression splits by commas, but ignores commas inside double quotes
+            // Improved CSV parsing with better validation
             const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
             for (let i = 1; i < lines.length; i++) {
-                // Skip any empty lines in the CSV
-                if (lines[i].trim() === '') continue;
+                const line = lines[i].trim();
+                
+                // Skip empty lines or lines with only commas
+                if (!line || line.replace(/,/g, '').trim() === '') continue;
 
-                // Inside the 'for' loop in parseCSV
-                const values = lines[i].split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+                const values = line.split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+                
+                // Validate row has at least some data
+                if (values.every(v => v === '')) continue;
                             
-                // No 'if' check needed here!
                 let row = {};
                 headers.forEach((header, index) => {
-                    // This will assign the value if it exists, or an empty string if the row is too short
                     row[header] = values[index] || ''; 
                 });
-                data.push(row);
+                
+                // Only add row if it has a username (required field)
+                if (row['User Name'] && row['User Name'].trim() !== '') {
+                    data.push(row);
+                }
             }
             return data;
         }
@@ -763,6 +770,13 @@
             return '';
         }
 
+        // Sanitize HTML to prevent XSS attacks
+        function sanitizeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function createPlayerCard(player, rank) {
             const card = document.createElement('div');
             card.className = 'player-card ' + getRankClass(rank);
@@ -770,27 +784,27 @@
 
             const badges = parseInt(player['# of Skill Badges Completed']) || 0;
             const games = parseInt(player['# of Arcade Games']) || 0;
+            
+            // Calculate max progress dynamically from all players
             const maxProgress = 20; 
             const totalActivity = badges + games;
             const progress = Math.min(100, (totalActivity / maxProgress) * 100);
 
-            // --- NEW CODE START ---
-            // Check if the completion time exists
+            // Sanitize user input to prevent XSS
+            const sanitizedName = sanitizeHTML(player['User Name'] || 'Unknown');
             const completionTime = player['Completion Time'];
-            // Create the HTML for the completion time, but only if it's not an empty string
             const completionTimeHTML = completionTime
                 ? `<div class="stat-item">
                     <span>🗓️</span>
-                    <span>Completed: <strong>${completionTime.replace(/EDT|EST|PDT|PST/g, '').trim()}</strong></span>
+                    <span>Completed: <strong>${sanitizeHTML(completionTime.replace(/EDT|EST|PDT|PST/g, '').trim())}</strong></span>
                 </div>`
                 : '';
-            // --- NEW CODE END ---
 
             card.innerHTML = `
                 <div class="rank-badge ${getBadgeClass(rank)}">#${rank}</div>
                 <div class="player-info">
                     <div class="player-name">
-                        ${player['User Name']}
+                        ${sanitizedName}
                         ${getAchievementBadge(badges, games)}
                     </div>
                     <div class="player-stats">
@@ -916,42 +930,58 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filtered = allPlayers.filter(p => 
-                p['User Name'].toLowerCase().includes(searchTerm)
-            );
-            
-            let sortedFiltered = [...filtered];
-            
-            // INSIDE: document.getElementById('searchInput').addEventListener(...)
-// INSIDE: document.getElementById('searchInput').addEventListener(...)
-
-            if (currentFilter === 'games') {
-                sortedFiltered.sort((a, b) => {
-                    const diff = (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0);
-                    if (diff !== 0) return diff;
-                    return compareTimes(a['Completion Time'], b['Completion Time']);
-                });
-            } else if (currentFilter === 'badges') {
-                sortedFiltered.sort((a, b) => {
-                    const diff = (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0);
-                    if (diff !== 0) return diff;
-                    return compareTimes(a['Completion Time'], b['Completion Time']);
-                });
-            } else {
-                sortedFiltered.sort((a, b) => {
-                    const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
-                    const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
-                    const diff = bScore - aScore;
-                    if (diff !== 0) return diff;
-                    return compareTimes(a['Completion Time'], b['Completion Time']);
-                });
+            // Clear existing timer
+            if (searchDebounceTimer) {
+                clearTimeout(searchDebounceTimer);
             }
             
-            renderLeaderboard(sortedFiltered);
+            // Debounce search to improve performance (300ms delay)
+            searchDebounceTimer = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = allPlayers.filter(p => 
+                    p['User Name'].toLowerCase().includes(searchTerm)
+                );
+                
+                // Use existing sort function based on current filter
+                let sortedFiltered = [...filtered];
+                
+                if (currentFilter === 'games') {
+                    sortedFiltered.sort((a, b) => {
+                        const diff = (parseInt(b['# of Arcade Games']) || 0) - (parseInt(a['# of Arcade Games']) || 0);
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
+                } else if (currentFilter === 'badges') {
+                    sortedFiltered.sort((a, b) => {
+                        const diff = (parseInt(b['# of Skill Badges Completed']) || 0) - (parseInt(a['# of Skill Badges Completed']) || 0);
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
+                } else if (currentFilter === 'active') {
+                    sortedFiltered.sort((a, b) => {
+                        const aTotal = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                        const bTotal = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                        const diff = bTotal - aTotal;
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
+                } else {
+                    sortedFiltered.sort((a, b) => {
+                        const aScore = (parseInt(a['# of Skill Badges Completed']) || 0) + (parseInt(a['# of Arcade Games']) || 0);
+                        const bScore = (parseInt(b['# of Skill Badges Completed']) || 0) + (parseInt(b['# of Arcade Games']) || 0);
+                        const diff = bScore - aScore;
+                        if (diff !== 0) return diff;
+                        return compareTimes(a['Completion Time'], b['Completion Time']);
+                    });
+                }
+                
+                renderLeaderboard(sortedFiltered);
+            }, 300);
         });
 
-        fetch('https://raw.githubusercontent.com/mohitsharmas97/leaderboard_gdg/refs/heads/main/progress_data.csv')
+        // Add cache busting to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        fetch(`./progress_data.csv?v=${cacheBuster}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
