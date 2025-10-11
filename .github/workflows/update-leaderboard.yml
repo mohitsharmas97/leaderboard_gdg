@@ -3,7 +3,7 @@ name: Update Leaderboard Data
 on:
   schedule:
     # Runs every 15 minutes for faster badge updates
-    - cron: '*/15 * * * *'
+    - cron: '*/45 * * * *'
   workflow_dispatch:
 
 jobs:
