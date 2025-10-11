@@ -31,6 +31,22 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
+          
+          # Stage ONLY the two files you want to commit
           git add progress_data.csv google_cloud_badges_details.csv
-          # This command commits and pushes only if there are changes
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update leaderboard data" && git pull --rebase && git push)
+          
+          # Check if there are any changes to commit before proceeding
+          if ! git diff --staged --quiet; then
+            # Discard all other modified (but not staged) files
+            git checkout -- .
+            
+            # Remove all other untracked files and directories
+            git clean -fd
+            
+            # Now, commit and push the staged changes
+            git commit -m "Auto-update leaderboard data"
+            git pull --rebase
+            git push
+          else
+            echo "No changes to commit."
+          fi
