@@ -194,7 +194,7 @@ def create_sample_input_file(filename):
 
 # --- Main execution ---
 if __name__ == "__main__":
-    input_filename = "https://raw.githubusercontent.com/mohitsharmas97/leaderboard_gdg/refs/heads/main/progress_data_input.csv"
+    input_filename = "progress_data_input.csv"
     summary_output_filename = "progress_data.csv"
     detailed_output_filename = "google_cloud_badges_details.csv"
     failed_output_filename = "failed_profiles.csv"
